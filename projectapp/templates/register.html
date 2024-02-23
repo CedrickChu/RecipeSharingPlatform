@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Register Page
+{% endblock %}
+
+{% block content %}
+<body class="text-center" style='margin-top: 2rem;'>
+    <div class="container" id="form-register">
+        <h3>REGISTER ACCOUNT</h3>
+        <form method="POST" action="{% url 'register' %}" class="form-register" enctype="multipart/form-data" style="color:black; width:50%; margin:auto;">
+            {% csrf_token %}
+
+            {{ user_form.as_p }}
+            {{ profile_form.as_p }}
+
+            <div class="checkbox mb-3">
+               <h6 class='text-black'>Already have an account?</h6>
+            </div>
+            <a class="btn btn-lg btn-block btn-secondary" href="{% url 'login' %}">Login</a>
+            <button type="submit" class="btn btn-lg btn-block btn-info">Register</button><br>
+
+        </form>
+    </div>
+</body>
+{% endblock %}
