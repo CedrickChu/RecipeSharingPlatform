@@ -38,3 +38,5 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = [CommentInline, RatingInline]
 
 admin.site.register(Recipe, RecipeAdmin)
+
+admin.site.register(Rating)

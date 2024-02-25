@@ -1,16 +1,18 @@
 from django.shortcuts import render
 from django.contrib.auth.views import LogoutView
-from .forms import CustomUserCreationForm, UserAndProfileForm, UserProfileForm, CommentForm
+from .forms import CustomUserCreationForm, UserAndProfileForm, UserProfileForm, CommentForm, LogoutForm, RecipeForm, RatingForm
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
-from .models import Recipe, Comment
+from .models import Recipe, Comment, Rating
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.urls import reverse
+from django.urls import reverse_lazy
+from django.views import View
+from django.db.models import Avg
 
 
 def login_view(request):
@@ -32,12 +34,15 @@ def login_view(request):
     return render(request, 'login.html', {'form': form})
 
 class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy('/')  # Set your desired next page here
+
     def post(self, request, *args, **kwargs):
-        self.next_page = '/' 
-        if self.logout(request):
-            if self.next_page:
-                return redirect(self.next_page)
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        return redirect(self.get_next_page())
+
+    def get_next_page(self):
+        next_page = self.request.POST.get('next', self.next_page)
+        return next_page
     
 def register_view(request):
     if request.method == 'POST':
@@ -49,14 +54,13 @@ def register_view(request):
             profile = profile_form.save(commit=False)
             profile.user = user
             profile.save()
-            return redirect('dashboard')
+            return redirect('index')
     else:
         user_form = CustomUserCreationForm()
         profile_form = UserProfileForm()
 
     return render(request, 'register.html', {'user_form': user_form, 'profile_form': profile_form})
 
-@login_required
 def index_view(request):
     recipes = Recipe.objects.all()
     context = {'recipes': recipes}
@@ -72,7 +76,8 @@ def add_comment(request, recipe_id):
             comment.user = request.user 
             comment.recipe = recipe
             comment.save()
-            return redirect('index')
+            return redirect('recipe_detail', recipe_id=recipe.pk)
+
     else:
         form = CommentForm()
 
@@ -81,17 +86,14 @@ def add_comment(request, recipe_id):
 @login_required
 def edit_comment(request, pk):
     comment = get_object_or_404(Comment, pk=pk)
-
-    # Check if the current user is the owner of the comment
     if request.user != comment.user:
-        # Handle unauthorized access (you may redirect or show an error page)
         return redirect('index')
 
     if request.method == 'POST':
         form = CommentForm(request.POST, instance=comment)
         if form.is_valid():
             form.save()
-            return redirect('index')
+            return redirect('recipe_detail', pk=comment.pk)
     else:
         form = CommentForm(instance=comment)
 
@@ -113,7 +115,6 @@ def delete_comment(request, comment_id):
 def edit_comment(request, comment_id):
     comment = get_object_or_404(Comment, id=comment_id)
 
-    # Check if the user has permission to edit the comment
     if comment.user != request.user:
         return JsonResponse({'success': False, 'error': 'Permission denied'})
 
@@ -124,3 +125,59 @@ def edit_comment(request, comment_id):
         return JsonResponse({'success': True})
     else:
         return JsonResponse({'success': False, 'error': 'Empty comment not allowed'})
+    
+@login_required
+def create_recipe(request):
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, request.FILES)
+        if form.is_valid():
+            recipe = form.save(commit=False)
+            recipe.created_by = request.user
+            recipe.save()
+            return redirect('recipe_details', pk=recipe.pk)
+    else:
+        form = RecipeForm()
+
+    return render(request, 'create_recipe.html', {'form': form})
+
+
+@login_required
+def recipe_detail(request, recipe_id):  
+    recipe = get_object_or_404(Recipe, id=recipe_id) 
+    average_rating = Rating.objects.filter(recipe=recipe).aggregate(Avg('value'))['value__avg']
+
+    context = {
+        'recipe': recipe,
+        'average_rating': average_rating,
+    }
+
+    return render(request, 'recipe_detail.html', context)
+
+@require_POST
+@login_required
+def recipe_rating(request, recipe_id):
+    if request.method == 'POST':
+        user = request.user
+        rating_value = request.POST.get('rating_value')
+
+        # Check if rating_value is not None and can be converted to an integer
+        if rating_value is not None and rating_value.isdigit():
+            value = int(rating_value)
+            recipe = get_object_or_404(Recipe, id=recipe_id)
+
+            try:
+                existing_rating = Rating.objects.get(user=user, recipe=recipe)
+                existing_rating.value = value
+                existing_rating.save()
+            except Rating.DoesNotExist:
+                Rating.objects.create(user=user, recipe=recipe, value=value)
+
+            average_rating = Rating.objects.filter(recipe=recipe).aggregate(Avg('value'))['value__avg']
+
+            return JsonResponse({'success': True, 'average_rating': average_rating})
+
+        return JsonResponse({'success': False, 'error_message': 'Invalid rating value'})
+
+    return JsonResponse({'success': False, 'error_message': 'Invalid request method'})
+        
+

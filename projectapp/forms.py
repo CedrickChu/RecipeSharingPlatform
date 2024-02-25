@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.forms import AuthenticationForm
-from .models import User, UserProfile, Comment
+from .models import User, UserProfile, Comment, Recipe
 
 class CustomUserCreationForm(UserCreationForm):
     class Meta:
@@ -47,3 +47,21 @@ class CommentForm(forms.ModelForm):
         model = Comment
         fields = ['text']
 
+class LogoutForm(forms.Form):
+    pass
+
+class RecipeForm(forms.ModelForm):
+    class Meta:
+        model = Recipe
+        fields = ['title', 'description', 'ingredients', 'instructions', 'image']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'ingredients': forms.Textarea(attrs={'class': 'form-control'}),
+            'instructions': forms.Textarea(attrs={'class': 'form-control'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+        
+class RatingForm(forms.Form):
+    recipe_id = forms.IntegerField()
+    rating_value = forms.IntegerField(min_value=1, max_value=5)
