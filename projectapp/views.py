@@ -1,18 +1,46 @@
 from django.shortcuts import render
 from django.contrib.auth.views import LogoutView
-from .forms import CustomUserCreationForm, UserAndProfileForm, UserProfileForm, CommentForm, LogoutForm, RecipeForm, RatingForm
+from .forms import CustomUserCreationForm, UserProfileForm, CommentForm, LogoutForm, RecipeForm, RatingForm
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, authenticate
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
-from .models import Recipe, Comment, Rating
+from .models import Recipe, Comment, Rating, User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.urls import reverse_lazy
-from django.views import View
+from django.http import Http404
 from django.db.models import Avg
+from social_django.models import UserSocialAuth
+import requests
+from django.core.files.base import ContentFile
+
+# @login_required
+# def update_facebook_profile_image(request):
+#     # user = request.user
+
+#     # try:
+#     #     facebook_social_account = UserSocialAuth.objects.get(user=user, provider='facebook')
+#     # except UserSocialAuth.DoesNotExist:
+#     #     return redirect('#')
+
+#     # if not user.userprofile.profile_image and facebook_social_account:
+#     #     fb_profile_image_url = f"https://graph.facebook.com/{facebook_social_account.uid}/picture?type=large"
+
+#     #     try:
+#     #         response = requests.get(fb_profile_image_url)
+#     #         response.raise_for_status()
+
+#     #         user.userprofile.profile_image.save('facebook_profile_image.jpg', ContentFile(response.content))
+#     #         user.save()
+
+#     #     except requests.exceptions.RequestException as e:
+#     #         print(f"Request error: {e}")
+#     #         return redirect('#')
+
+#     # return redirect('#')
 
 
 def login_view(request):
@@ -22,7 +50,6 @@ def login_view(request):
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             user = authenticate(request, username=username, password=password)
-
             if user is not None:
                 login(request, user)
                 return redirect('index')
@@ -31,10 +58,11 @@ def login_view(request):
     else:
         form = AuthenticationForm()
 
-    return render(request, 'login.html', {'form': form})
+    facebook_login_url = '/complete/facebook/'
+    return render(request, 'login.html', {'form': form, 'facebook_login_url': facebook_login_url})
 
 class CustomLogoutView(LogoutView):
-    next_page = reverse_lazy('/')  # Set your desired next page here
+    next_page = reverse_lazy('/')
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -43,7 +71,7 @@ class CustomLogoutView(LogoutView):
     def get_next_page(self):
         next_page = self.request.POST.get('next', self.next_page)
         return next_page
-    
+
 def register_view(request):
     if request.method == 'POST':
         user_form = CustomUserCreationForm(request.POST)
@@ -73,7 +101,7 @@ def add_comment(request, recipe_id):
         form = CommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
-            comment.user = request.user 
+            comment.user = request.user
             comment.recipe = recipe
             comment.save()
             return redirect('recipe_detail', recipe_id=recipe.pk)
@@ -125,7 +153,7 @@ def edit_comment(request, comment_id):
         return JsonResponse({'success': True})
     else:
         return JsonResponse({'success': False, 'error': 'Empty comment not allowed'})
-    
+
 @login_required
 def create_recipe(request):
     if request.method == 'POST':
@@ -134,16 +162,15 @@ def create_recipe(request):
             recipe = form.save(commit=False)
             recipe.created_by = request.user
             recipe.save()
-            return redirect('recipe_details', pk=recipe.pk)
+            return redirect('recipe_detail', recipe_id=recipe.pk)
     else:
         form = RecipeForm()
 
     return render(request, 'create_recipe.html', {'form': form})
 
 
-@login_required
-def recipe_detail(request, recipe_id):  
-    recipe = get_object_or_404(Recipe, id=recipe_id) 
+def recipe_detail(request, recipe_id):
+    recipe = get_object_or_404(Recipe, id=recipe_id)
     average_rating = Rating.objects.filter(recipe=recipe).aggregate(Avg('value'))['value__avg']
 
     context = {
@@ -160,7 +187,6 @@ def recipe_rating(request, recipe_id):
         user = request.user
         rating_value = request.POST.get('rating_value')
 
-        # Check if rating_value is not None and can be converted to an integer
         if rating_value is not None and rating_value.isdigit():
             value = int(rating_value)
             recipe = get_object_or_404(Recipe, id=recipe_id)
@@ -179,5 +205,35 @@ def recipe_rating(request, recipe_id):
         return JsonResponse({'success': False, 'error_message': 'Invalid rating value'})
 
     return JsonResponse({'success': False, 'error_message': 'Invalid request method'})
-        
 
+
+def edit_recipe(request, recipe_id):
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    if request.method == 'POST':
+        form = RecipeForm(request.POST, request.FILES, instance=recipe)
+        if form.is_valid():
+            form.save()
+            return redirect('recipe_detail', recipe_id=recipe.id)  # Assuming you have a URL named 'recipe_detail'
+    else:
+        form = RecipeForm(instance=recipe)
+    
+    return render(request, 'edit_recipe.html', {'recipe_form': form})
+
+@login_required
+def delete_recipe(request, recipe_id):
+    recipe = get_object_or_404(Recipe, pk=recipe_id)
+    if request.user == recipe.created_by:
+        recipe.delete()
+        return redirect('index') 
+    else:
+        return render(request, 'unauthorized.html') 
+
+
+def user_profile(request, user_id=None, username=None):
+    if username:
+        user = get_object_or_404(User, username=username)
+    else:
+        return Http404("User not found")
+    recipes = Recipe.objects.filter(created_by=user)
+    context = {'profile_user': user, 'recipes': recipes}
+    return render(request, 'user_profile.html', context)

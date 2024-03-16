@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block navbar %}
+    {% include 'header.html' %}
+{% endblock %}
+{% block content %}
+<section>
+    <h2>Edit Recipe</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ recipe_form.as_p }}
+        <button type="submit">Update Recipe</button>
+    </form>
+</section>
+
+{% endblock %}

@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
-
+{% block navbar %}
+    {% include 'header.html' %}
+{% endblock %}
 {% block content %}
 <section>
     <h2>Create a New Recipe</h2>
@@ -9,5 +11,5 @@
     <button type="submit">Create Recipe</button>
   </form>
 </section>
-  
+
 {% endblock %}

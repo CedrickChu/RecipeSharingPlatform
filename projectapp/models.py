@@ -5,20 +5,30 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.urls import reverse
 
+
+
+
 class CustomAccountManager(BaseUserManager):
-    def create_user(self, username, phone, password=None, **extra_fields):
-        if not username:
-            raise ValueError('The Username field must be set')
-        user = self.model(username=username, phone=phone, **extra_fields)
+    def create_user(self, email, username, password=None, **extra_fields):
+        user = self.model(
+            email=self.normalize_email(email),
+            username=username,
+            phone=extra_fields.get('phone', ''),
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, phone, password=None, **extra_fields):
+    def create_superuser(self, email, username, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
-        return self.create_user(username, phone, password, **extra_fields)
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, username, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
@@ -34,13 +44,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = CustomAccountManager()
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'phone']
-    
+
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name=_('groups'),
         blank=True,
         help_text=_('The groups this user belongs to. A user will get all permissions granted to these groups.'),
-        related_name='newuser_set',  
+        related_name='newuser_set',
         related_query_name='newuser',
     )
     user_permissions = models.ManyToManyField(
@@ -48,7 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name=_('user permissions'),
         blank=True,
         help_text=_('Specific permissions for this user.'),
-        related_name='newuser_set',  
+        related_name='newuser_set',
         related_query_name='newuser',
     )
 
@@ -63,7 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def has_module_perms(self, app_label):
         return self.is_staff
-    
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     first_name = models.CharField(max_length=150, blank=True, null=True)
@@ -77,13 +87,13 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-    
+
 class Recipe(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     ingredients = models.TextField()
     instructions = models.TextField()
-    image = models.ImageField(upload_to='recipe_images/', blank=True, null=True)
+    image = models.FileField(upload_to='recipe_images/', blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -36,9 +36,13 @@
                     Log Out
                 </button>
                 {% if user.userprofile.profile_image %}
-                    <a href='#'><img src="{{ user.userprofile.profile_image.url }}" alt="Profile Image" style="height: 60px; width: 60px; border-radius: 50%; margin-left: 20px;"></a>
+                <a href="{% url 'user_profile' username=user.username%}">
+                    <img src="{{ user.userprofile.profile_image.url }}" alt="Profile Image" style="height: 60px; width: 60px; border-radius: 50%; margin-left: 20px;"></a>
+                </a>
                 {% else %}
-                    <img src="../../media/profile_images/default.png" alt="Default Profile Image" class="user-profile-image">
+                <a href="{% url 'user_profile' username=user.username%}">
+                    <img src="../../media/profile_images/default.png" alt="Default Profile Image" class="user-profile-image"></a>
+                </a>
                 {% endif %}
                 <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display: none;">
                     {% csrf_token %}
@@ -48,12 +52,12 @@
                 <a href="{% url 'register' %}" class="btn btn-danger" style="height: 40px!important; font-size: 15px; margin-left: 20px;" onclick="loadLoginSignupForm('signup')">Sign Up</a>
             {% endif %}
         </div>
-        
+
         <script>
             function loadLoginSignupForm(formType) {
                 const formContainer = document.getElementById('authButtons');
                 const url = formType === 'login' ? '{% url "login" %}' : '{% url "register" %}';
-        
+
                 fetch(url)
                     .then(response => response.text())
                     .then(data => {
@@ -61,13 +65,13 @@
                     })
                     .catch(error => console.error('Error:', error));
             }
-        
+
             function confirmLogout() {
                 if (confirm("Are you sure you want to log out?")) {
                     document.getElementById('logoutForm').submit();
                 }
             }
         </script>
-        
+
     </div>
 </nav>

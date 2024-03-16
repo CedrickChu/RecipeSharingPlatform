@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth.views import LoginView
-from . import views 
+from . import views
+
 
 urlpatterns = [
     path('login/', views.login_view, name='login'),
@@ -14,4 +15,12 @@ urlpatterns = [
     path('edit_comment/<int:comment_id>/', views.edit_comment, name='edit_comment'),
     path('recipe/<int:recipe_id>/', views.recipe_detail, name='recipe_detail'),
     path('recipe/<int:recipe_id>/rate/', views.recipe_rating, name='recipe_rating'),
+    path('edit-recipe/<int:recipe_id>/', views.edit_recipe, name='edit_recipe'),
+    path('delete_recipe/<int:recipe_id>/', views.delete_recipe, name='delete_recipe'),
+    path('users/<str:username>/', views.user_profile, name='user_profile'),
+
+    # path('update_facebook_profile_image/', views.update_facebook_profile_image, name='update_facebook_profile_image'),
+
+
 ]
+

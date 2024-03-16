@@ -7,7 +7,7 @@ class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ['email', 'username', 'phone', 'password1', 'password2']
-    
+
     def __init__(self, *args, **kwargs):
         super(CustomUserCreationForm, self).__init__(*args, **kwargs)
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
@@ -59,9 +59,9 @@ class RecipeForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control'}),
             'ingredients': forms.Textarea(attrs={'class': 'form-control'}),
             'instructions': forms.Textarea(attrs={'class': 'form-control'}),
-            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'Attachments': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
-        
+
 class RatingForm(forms.Form):
     recipe_id = forms.IntegerField()
     rating_value = forms.IntegerField(min_value=1, max_value=5)

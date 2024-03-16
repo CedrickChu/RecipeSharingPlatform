@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-tvv4-o(i18)4q9vldul!$4j1u4o883ia*w-8#fxle_o5@ql&e-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
 
 
 # Application definition
@@ -37,14 +38,23 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'projectapp'
+    'projectapp',
+    'sslserver',
+    'social_django',
 ]
+SECURE_SSL_REDIRECT = True
+SOCIAL_AUTH_DEBUG = True
+
 AUTH_USER_MODEL = 'projectapp.User'
 
 AUTHENTICATION_BACKENDS = [
     'projectapp.custom_auth_backend.CustomAuthBackend',
+    'social_core.backends.facebook.FacebookOAuth2',
 ]
-LOGIN_REDIRECT_URL = '/home/'
+SOCIAL_AUTH_FACEBOOK_KEY = '2593756490786338'
+SOCIAL_AUTH_FACEBOOK_SECRET = '9eac984854da0718cb6c056f2868b079'
+
+LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -54,6 +64,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
+
 ]
 
 ROOT_URLCONF = 'recipesharingproject.urls'
@@ -109,6 +121,14 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+SECURE_BROWSER_XSS_FILTER = True
+
+PERMISSIONS_POLICY = {
+    'xr-spatial-tracking': ['*'],
+    'ambient-light-sensor': ['self'],
+    'window-management': ['self'],
+    'clipboard-write': ['*'],
+}
 
 
 # Internationalization

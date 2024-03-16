@@ -20,7 +20,7 @@ p{
     padding-bottom: 1.1em;
     border-radius: 15px;
     margin: 1em;
-    width: 300px;
+    width: auto;
     height: 120px;
 }
 .col .username{
@@ -43,6 +43,10 @@ p{
 .recipe-title{
     color: rgb(4, 89, 110);
     padding-bottom: 20px;
+
+}
+.recipe-title:hover{
+    text-decoration: none;
 
 }
 .recipe-image {

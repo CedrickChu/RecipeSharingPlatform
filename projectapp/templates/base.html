@@ -8,6 +8,11 @@
         <link rel="stylesheet" href="/static/styles/section.css"/>
         <link rel="stylesheet" href="/static/styles/modal-content.css"/>
         <link rel="stylesheet" href="/static/styles/add_button.css"/>
+        <link rel="stylesheet" href="/static/styles/kebab_button.css"/>
+        <link rel="canonical" href="{{ request.build_absolute_uri }}" />
+
+        <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v10.0&appId=YOUR_APP_ID" nonce="YOUR_NONCE"></script>
+
 
         <script src='../static/js/modal-content.js'></script>
 
@@ -51,6 +56,44 @@
         </title>
    </head>
    <body>
+
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : '2593756490786338',
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v19.0'
+            });
+    
+            FB.AppEvents.logPageView();
+            checkLoginState();
+        };
+    
+        (function(d, s, id){
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {return;}
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    
+        function checkLoginState() {
+            FB.getLoginStatus(function(response) {
+                if (response.status === 'connected') {
+                    console.log('Logged in:', response.authResponse);
+                } else {
+                    FB.login(function(response) {
+                        if (response.authResponse) {
+                            console.log('Logged in:', response.authResponse);
+                        } else {
+                            console.log('Login cancelled');
+                        }
+                    }, { scope: 'public_profile,email' });
+                }
+            });
+        }
+    </script>
         {% block navbar %}{% endblock %}
         {% block content %}{% endblock %}
         <div id="imageModal" class="modal">
